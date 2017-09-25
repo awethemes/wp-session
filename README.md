@@ -1,2 +1,3 @@
-# wp-session
+# WP Session
+
 The missing Session Manager for WordPress

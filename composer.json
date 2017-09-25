@@ -1,0 +1,29 @@
+{
+    "name": "awethemes/wp-session",
+    "description": "The missing Session Manager for WordPress",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "authors": [
+        {
+            "name": "awethemes",
+            "email": "support@awethemes.com"
+        },
+        {
+            "name": "Nguyen Van Anh",
+            "email": "anhskohbo@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.6.4",
+        "tightenco/collect": "5.4.*|5.5.*"
+    },
+    "require-dev": {
+        "mockery/mockery": "^0.9.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "Awethemes\\WP_Session\\": "src/"
+        }
+    }
+}
