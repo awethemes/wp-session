@@ -79,7 +79,7 @@ class WP_Session implements ArrayAccess, Countable {
 		if ( ! $this->running_in_cli() ) {
 			// Add the session identifier to cookie, so we can re-use that in lifetime.
 			$expiration_date = $this->config['expire_on_close'] ? 0 : time() + $this->lifetime_in_seconds();
-			setcookie( $session->get_name(), $session->get_id(), $expiration_date, COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN, is_ssl() );
+			setcookie( $session->get_name(), $session->get_id(), $expiration_date, COOKIEPATH ?: '/', COOKIE_DOMAIN, is_ssl() );
 		}
 	}
 
@@ -137,7 +137,7 @@ class WP_Session implements ArrayAccess, Countable {
 	 * @return bool
 	 */
 	protected function running_in_cli() {
-		return php_sapi_name() === 'cli' || defined( 'WP_CLI' );
+		return PHP_SAPI === 'cli' || defined( 'WP_CLI' );
 	}
 
 	/**
@@ -205,6 +205,6 @@ class WP_Session implements ArrayAccess, Countable {
 	 * @return mixed
 	 */
 	public function __call( $method, $parameters ) {
-		return $this->session->$method( ...$parameters );
+		return call_user_func_array( [ $this->session, $method ], $parameters );
 	}
 }

@@ -52,7 +52,7 @@ class WP_Session_Handler implements SessionHandlerInterface {
 		if ( $this->expired( $session ) ) {
 			$this->exists = true;
 
-			return;
+			return null;
 		}
 
 		if ( isset( $session['payload'] ) ) {
@@ -108,6 +108,7 @@ class WP_Session_Handler implements SessionHandlerInterface {
 		}
 
 		$expired = [];
+
 		$expired_time = time() - $lifetime;
 
 		foreach ( $sessions as $session ) {

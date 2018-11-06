@@ -50,7 +50,7 @@ class Store implements Session {
 	 */
 	public function __construct( $name, SessionHandlerInterface $handler, $id = null ) {
 		$this->set_id( $id );
-		$this->name = $name;
+		$this->name    = $name;
 		$this->handler = $handler;
 	}
 
