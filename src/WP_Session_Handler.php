@@ -1,10 +1,15 @@
 <?php
+
 namespace Awethemes\WP_Session;
 
-use SessionHandlerInterface;
-use Awethemes\Support\Carbonate;
+class WP_Session_Handler implements \SessionHandlerInterface {
+	/**
+	 * THe session name.
+	 *
+	 * @var string
+	 */
+	protected $name;
 
-class WP_Session_Handler implements SessionHandlerInterface {
 	/**
 	 * The number of minutes the session should be valid.
 	 *
@@ -22,10 +27,11 @@ class WP_Session_Handler implements SessionHandlerInterface {
 	/**
 	 * Create a new database session handler instance.
 	 *
-	 * @param  int $minutes The number of minutes.
-	 * @return void
+	 * @param  string $name    The session name.
+	 * @param  int    $minutes The number of minutes.
 	 */
-	public function __construct( $minutes ) {
+	public function __construct( $name, $minutes ) {
+		$this->name    = $name;
 		$this->minutes = $minutes;
 	}
 
@@ -67,7 +73,7 @@ class WP_Session_Handler implements SessionHandlerInterface {
 	 */
 	public function write( $session_id, $data ) {
 		$payload = [
-			'payload' => $data,
+			'payload'       => $data,
 			'last_activity' => time(),
 		];
 
@@ -102,13 +108,16 @@ class WP_Session_Handler implements SessionHandlerInterface {
 	public function gc( $lifetime ) {
 		global $wpdb;
 
-		$sessions = $wpdb->get_results( "SELECT * FROM `$wpdb->options` WHERE `option_name` LIKE '_wp_session_%' LIMIT 0, 1000", ARRAY_A );
+		$placeholder = $this->get_option_name( '' );
+
+		// @codingStandardsIgnoreLine
+		$sessions = $wpdb->get_results( "SELECT * FROM `$wpdb->options` WHERE `option_name` LIKE '{$placeholder}%' LIMIT 0, 10000", ARRAY_A );
+
 		if ( empty( $sessions ) ) {
 			return;
 		}
 
-		$expired = [];
-
+		$expired      = [];
 		$expired_time = time() - $lifetime;
 
 		foreach ( $sessions as $session ) {
@@ -122,6 +131,7 @@ class WP_Session_Handler implements SessionHandlerInterface {
 		// Delete expired sessions.
 		if ( ! empty( $expired ) ) {
 			$placeholders = implode( ', ', $expired );
+
 			// @codingStandardsIgnoreLine
 			$wpdb->query( "DELETE FROM `$wpdb->options` WHERE `option_id` IN ($placeholders)" );
 		}
@@ -144,6 +154,6 @@ class WP_Session_Handler implements SessionHandlerInterface {
 	 * @return string
 	 */
 	protected function get_option_name( $session_id ) {
-		return "_wp_session_{$session_id}";
+		return "_wp_session_{$this->name}_{$session_id}";
 	}
 }

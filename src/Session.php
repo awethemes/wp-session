@@ -1,4 +1,5 @@
 <?php
+
 namespace Awethemes\WP_Session;
 
 interface Session {

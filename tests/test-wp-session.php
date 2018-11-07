@@ -26,7 +26,7 @@ class WP_Session_Test extends WP_UnitTestCase {
 	}
 
 	public function testSession2() {
-		$this->assertEquals($this->session->get('test_set_cookie'), 111);
+		$this->assertEquals(111, $this->session->get('test_set_cookie'));
 	}
 
 	public function testCountable() {

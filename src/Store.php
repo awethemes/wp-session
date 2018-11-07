@@ -1,4 +1,5 @@
 <?php
+
 namespace Awethemes\WP_Session;
 
 use Illuminate\Support\Arr;
@@ -81,9 +82,8 @@ class Store implements Session {
 
 		$this->age_flash_data();
 
-		$this->handler->write(
-			$this->get_id(), $this->attributes
-		);
+		/* @noinspection PhpParamsInspection */
+		$this->handler->write( $this->get_id(), $this->attributes );
 
 		$this->started = false;
 	}
@@ -469,7 +469,7 @@ class Store implements Session {
 		$length = 40;
 
 		require_once ABSPATH . 'wp-includes/class-phpass.php';
-		$bytes = (new \PasswordHash( 8, false ))->get_random_bytes( $length * 2 );
+		$bytes = ( new \PasswordHash( 8, false ) )->get_random_bytes( $length * 2 );
 
 		return substr( str_replace( [ '/', '+', '=' ], '', base64_encode( $bytes ) ), 0, $length );
 	}

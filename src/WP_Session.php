@@ -1,10 +1,8 @@
 <?php
+
 namespace Awethemes\WP_Session;
 
-use Countable;
-use ArrayAccess;
-
-class WP_Session implements ArrayAccess, Countable {
+class WP_Session implements \ArrayAccess, \Countable {
 	/**
 	 * The session cookie name.
 	 *
@@ -25,23 +23,23 @@ class WP_Session implements ArrayAccess, Countable {
 	 * @var array
 	 */
 	protected $config = [
-		// The session lifetime in minutes.
-		'lifetime' => 1440,
-
-		// If true, the session immediately expire on the browser closing.
-		'expire_on_close' => false,
+		'lifetime'        => 1440,  // The session lifetime in minutes.
+		'expire_on_close' => false, // If true, the session immediately expire on the browser closing.
 	];
 
 	/**
 	 * Create new session.
 	 *
-	 * @param string $name   The session cookie name, should be unique.
-	 * @param array  $config The session configure.
+	 * @param string                        $name   The session cookie name, should be unique.
+	 * @param array                         $config The session configure.
+	 * @param \SessionHandlerInterface|null $handler The session handler.
 	 */
-	public function __construct( $name, array $config = [] ) {
-		$this->name    = sanitize_key( $name );
-		$this->config  = array_merge( $this->config, $config );
-		$this->session = new Store( $name, new WP_Session_Handler( $this->config['lifetime'] ) );
+	public function __construct( $name, array $config = [], \SessionHandlerInterface $handler = null ) {
+		$this->name = sanitize_key( $name );
+
+		$this->config = array_merge( $this->config, $config );
+
+		$this->session = new Store( $name, $handler ?: new WP_Session_Handler( $this->name, $this->config['lifetime'] ) );
 	}
 
 	/**
@@ -56,7 +54,7 @@ class WP_Session implements ArrayAccess, Countable {
 
 		// Register the garbage collector.
 		add_action( 'wp', [ $this, 'register_garbage_collection' ] );
-		add_action( 'awebooking_session_garbage_collection', [ $this, 'cleanup_expired_sessions' ] );
+		add_action( $this->get_schedule_name(), [ $this, 'cleanup_expired_sessions' ] );
 	}
 
 	/**
@@ -67,18 +65,18 @@ class WP_Session implements ArrayAccess, Countable {
 	 * @return void
 	 */
 	public function start_session() {
-		$session = $this->session;
+		$session = $this->get_store();
 
-		// Maybe set set ID from cookie.
 		$session_name = $session->get_name();
+
 		$session->set_id( isset( $_COOKIE[ $session_name ] ) ? sanitize_text_field( $_COOKIE[ $session_name ] ) : null );
 
-		// Start the session.
 		$session->start();
 
 		if ( ! $this->running_in_cli() ) {
 			// Add the session identifier to cookie, so we can re-use that in lifetime.
 			$expiration_date = $this->config['expire_on_close'] ? 0 : time() + $this->lifetime_in_seconds();
+
 			setcookie( $session->get_name(), $session->get_id(), $expiration_date, COOKIEPATH ?: '/', COOKIE_DOMAIN, is_ssl() );
 		}
 	}
@@ -91,7 +89,7 @@ class WP_Session implements ArrayAccess, Countable {
 	 * @return void
 	 */
 	public function commit_session() {
-		$this->session->save();
+		$this->get_store()->save();
 	}
 
 	/**
@@ -108,7 +106,7 @@ class WP_Session implements ArrayAccess, Countable {
 			return;
 		}
 
-		$this->session->get_handler()->gc( $this->lifetime_in_seconds() );
+		$this->get_store()->get_handler()->gc( $this->lifetime_in_seconds() );
 	}
 
 	/**
@@ -117,9 +115,18 @@ class WP_Session implements ArrayAccess, Countable {
 	 * @access private
 	 */
 	public function register_garbage_collection() {
-		if ( ! wp_next_scheduled( 'awebooking_session_garbage_collection' ) ) {
-			wp_schedule_event( time(), 'hourly', 'awebooking_session_garbage_collection' );
+		if ( ! wp_next_scheduled( $schedule = $this->get_schedule_name() ) ) {
+			wp_schedule_event( time(), 'hourly', $schedule );
 		}
+	}
+
+	/**
+	 * Return the name of schedule.
+	 *
+	 * @return string
+	 */
+	protected function get_schedule_name() {
+		return $this->name . '_session_garbage_collection';
 	}
 
 	/**
@@ -142,9 +149,20 @@ class WP_Session implements ArrayAccess, Countable {
 
 	/**
 	 * Get the session implementation.
+	 *
+	 * @return Session
 	 */
 	public function get_store() {
 		return $this->session;
+	}
+
+	/**
+	 * Set session store.
+	 *
+	 * @param Session $store The session store implementation.
+	 */
+	public function set_store( Session $store ) {
+		$this->session = $store;
 	}
 
 	/**
