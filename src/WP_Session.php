@@ -116,7 +116,7 @@ class WP_Session implements \ArrayAccess, \Countable {
 	 */
 	public function register_garbage_collection() {
 		if ( ! wp_next_scheduled( $schedule = $this->get_schedule_name() ) ) {
-			wp_schedule_event( time(), 'hourly', $schedule );
+			wp_schedule_event( time(), 'twicedaily', $schedule );
 		}
 	}
 
